@@ -1,25 +1,38 @@
+﻿using Example.Common.Cache.Helper;
+using Example.Common.Cache.Model;
+using Example.Common.Cache.Service;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// appsettings.json kullanımı için eklediğimiz kod
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+    .Build();
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+#region Redis
+// redis DI
+builder.Services.AddSingleton(sp => new RedisServer(new RedisSetting
+{
+    RedisDB = Convert.ToInt32(configuration.GetSection("RedisSetting:RedisDB").Value),
+    RedisEndPoint = configuration.GetSection("RedisSetting:RedisEndPoint").Value ?? "",
+    RedisPassword = configuration.GetSection("RedisSetting:RedisPassword").Value ?? "",
+    RedisPort = configuration.GetSection("RedisSetting:RedisPort").Value ?? "",
+}));
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+#endregion
 
-// Configure the HTTP request pipeline.
+var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
